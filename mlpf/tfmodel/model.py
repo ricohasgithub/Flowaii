@@ -2,6 +2,7 @@
 # PFNetDense: the GNN-based model with graph building based on LSH and a Gaussian distance kernel
 # PFNetTransformer: the transformer-based model using fast attention
 
+from math import comb
 import tensorflow as tf
 
 import numpy as np
@@ -268,7 +269,9 @@ def point_wise_feed_forward_network(d_model, dff, name, num_layers=1, activation
         kernel_regularizer = None
 
     layers = []
+    final = 0
     for ilayer in range(num_layers):
+        final = ilayer
         _name = name + "_dense_{}".format(ilayer)
 
         layers.append(tf.keras.layers.Dense(
@@ -280,8 +283,9 @@ def point_wise_feed_forward_network(d_model, dff, name, num_layers=1, activation
 
         if dim_decrease:
             dff = dff // 2
-
-    layers.append(tf.keras.layers.Dense(d_model, dtype=dtype, name="{}_dense_{}".format(name, ilayer+1)))
+        
+    layers.append(tf.keras.layers.Dense(d_model, dtype=dtype, name="{}_dense_{}".format(name, final+1)))
+    
     return tf.keras.Sequential(layers, name=name)
 
 def get_message_layer(config_dict, name):
