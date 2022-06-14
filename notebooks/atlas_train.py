@@ -9,10 +9,26 @@ sys.path += ["../mlpf"]
 import tfmodel
 from tfmodel.model import PFNetDense
 
+# Training parameters
+num_epochs = 100
+num_batches = 5
+
 # Dummy function for loading atlas data; to be implemented later
 def load_data():
     pass
 
+def transform_target(y):
+    return {
+        "cls": tf.one_hot(tf.cast(y[:, :, 0], tf.int32), num_output_classes),
+        "charge": y[:, :, 1:2],
+        "pt": y[:, :, 2:3],
+        "eta": y[:, :, 3:4],
+        "sin_phi": y[:, :, 4:5],
+        "cos_phi": y[:, :, 5:6],
+        "energy": y[:, :, 6:7],
+    }
+
+# Load data from pipeline
 data = load_data()
 
 input_classes = np.unique(data["X"][:, :, 0].flatten())
@@ -55,7 +71,7 @@ model = PFNetDense(
     combined_graph_layer=combined_graph_layer
 )
 
-# #temporal weight mode means each input element in the event can get a separate weight
+# Temporal weight mode means each input element in the event can get a separate weight
 model.compile(
     loss={
         "cls": tf.keras.losses.CategoricalCrossentropy(from_logits=False),
@@ -69,3 +85,6 @@ model.compile(
     optimizer="adam",
     sample_weight_mode="temporal"
 )
+
+# Train the model
+model.fit(data["X"], transform_target(data["Y"]), epochs=num_epochs, batch_size=num_batches)
